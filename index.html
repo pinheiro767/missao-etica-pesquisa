@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ética em Jogo — Vida Acadêmica</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0b1f4d">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">Ética em Jogo</div>
+    <div class="stats">
+      <div><img src="assets/energy.png"><span>Energia</span><b id="energy">80</b></div>
+      <div><img src="assets/knowledge.png"><span>Conhecimento</span><b id="knowledge">35</b></div>
+      <div><img src="assets/reputation.png"><span>Reputação</span><b id="reputation">50</b></div>
+      <div><img src="assets/ethics.png"><span>Ética</span><b id="ethics">50</b></div>
+    </div>
+    <button id="menuBtn" class="iconBtn">☰</button>
+  </header>
+
+  <main id="game" aria-label="Área do jogo">
+    <div id="scene" class="scene campus">
+      <div id="objective" class="objective">Missão: converse com o orientador.</div>
+      <img id="mentor" class="npc mentor" src="assets/professor.png" alt="Professor orientador">
+      <div id="player" class="player" tabindex="0" aria-label="Personagem principal"><img src="assets/hero.png" alt="Estudante"></div>
+      <button id="interactBtn" class="interact">INTERAGIR</button>
+      <div class="portal p1" data-room="classroom">Sala</div>
+      <div class="portal p2" data-room="library">Biblioteca</div>
+      <div class="portal p3" data-room="laboratory">Laboratório</div>
+    </div>
+  </main>
+
+  <nav class="controls">
+    <button data-move="left">◀</button><button data-move="right">▶</button><button id="actionBtn">Ação</button><button id="mapBtn">Mapa</button>
+  </nav>
+</div>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="panel"><button class="close" id="closeModal">×</button><div id="modalContent"></div></div></div>
+
+<template id="choiceTemplate"><button class="choice"></button></template>
+<script src="app.js"></script>
+</body>
+</html>
