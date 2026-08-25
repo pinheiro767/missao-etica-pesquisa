@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skipLink" href="#game">Pular para o jogo</a>
+<div id="srLive" class="srOnly" aria-live="polite" aria-atomic="true"></div>
 <div id="app">
   <header class="topbar">
     <div class="brand">Ética em Jogo</div>
@@ -16,14 +18,18 @@
       <div><img src="assets/reputation.png"><span>Reputação</span><b id="reputation">50</b></div>
       <div><img src="assets/ethics.png"><span>Ética</span><b id="ethics">50</b></div>
     </div>
-    <button id="menuBtn" class="iconBtn">☰</button>
+    <div class="topActions">
+      <button id="soundBtn" class="iconBtn" aria-pressed="true" aria-label="Ativar ou desativar som" title="Som">🔊</button>
+      <button id="accessBtn" class="iconBtn" aria-haspopup="dialog" aria-label="Abrir acessibilidade" title="Acessibilidade">♿</button>
+      <button id="menuBtn" class="iconBtn" aria-label="Abrir menu">☰</button>
+    </div>
   </header>
 
   <main id="game" aria-label="Área do jogo">
     <div id="scene" class="scene campus">
       <div id="objective" class="objective">Missão: converse com o orientador.</div>
       <img id="mentor" class="npc mentor" src="assets/professor.png" alt="Professor orientador">
-      <div id="player" class="player" tabindex="0" aria-label="Personagem principal"><img src="assets/hero.png" alt="Estudante"></div>
+      <div id="player" class="player" tabindex="0" aria-label="Personagem principal"><img src="assets/hero_frames/right_0.png" alt="Estudante"></div>
       <button id="interactBtn" class="interact">INTERAGIR</button>
       <div class="portal p1" data-room="classroom">Sala</div>
       <div class="portal p2" data-room="library">Biblioteca</div>
@@ -32,11 +38,36 @@
   </main>
 
   <nav class="controls">
-    <button data-move="left">◀</button><button data-move="right">▶</button><button id="actionBtn">Ação</button><button id="mapBtn">Mapa</button>
+    <button data-move="left">◀</button><button data-move="right">▶</button><button id="actionBtn">Casos éticos</button><button id="mapBtn">Mapa</button>
   </nav>
 </div>
 
-<div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="panel"><button class="close" id="closeModal">×</button><div id="modalContent"></div></div></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="panel" tabindex="-1">
+    <button class="close" id="closeModal" aria-label="Fechar janela">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<div id="accessPanel" class="accessPanel hidden" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <div class="accessCard">
+    <div class="accessHead"><h2 id="accessTitle">♿ Acessibilidade</h2><button id="closeAccess" class="closeAccess" aria-label="Fechar acessibilidade">×</button></div>
+    <p class="accessIntro">Ajustes salvos neste dispositivo.</p>
+    <div class="accessGrid">
+      <button id="fontDown" class="accessControl">A−<small>Diminuir texto</small></button>
+      <button id="fontUp" class="accessControl">A+<small>Aumentar texto</small></button>
+      <button id="contrastToggle" class="accessControl" aria-pressed="false">◐<small>Alto contraste</small></button>
+      <button id="motionToggle" class="accessControl" aria-pressed="false">⏸<small>Reduzir movimento</small></button>
+      <button id="ttsToggle" class="accessControl" aria-pressed="false">🗣<small>Leitura por voz</small></button>
+      <button id="soundToggle" class="accessControl" aria-pressed="true">🔊<small>Efeitos sonoros</small></button>
+    </div>
+    <label class="volumeRow">Volume
+      <input id="volumeRange" type="range" min="0" max="100" value="70" aria-label="Volume dos efeitos sonoros">
+      <span id="volumeValue">70%</span>
+    </label>
+    <div class="accessHelp"><b>Atalhos:</b> ← → ou A/D caminham · E/Enter interage · M abre mapa · Esc fecha janelas · R lê a tela atual.</div>
+  </div>
+</div>
 
 <template id="choiceTemplate"><button class="choice"></button></template>
 <script src="app.js"></script>
