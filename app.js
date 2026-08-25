@@ -226,7 +226,49 @@ function centerCamera(smooth=true){
 }
 
 let facing='right',walkFrame=0,walkClock=null;
-function setFrame(dir,idx){playerImg.src=`assets/hero_frames/${dir}_${idx}.png`}
+const FRAME_DIRS=['front','back','left','right'];
+const FRAME_COUNT=4;
+const frameCache=new Map();
+let lastValidFrame='assets/hero_frames/right_0.png';
+
+function framePath(dir,idx){
+  const safeDir=FRAME_DIRS.includes(dir)?dir:'right';
+  const safeIdx=Math.max(0,Math.min(FRAME_COUNT-1,Number(idx)||0));
+  return `assets/hero_frames/${safeDir}_${safeIdx}.png`;
+}
+function preloadFrames(){
+  FRAME_DIRS.forEach(dir=>{
+    for(let i=0;i<FRAME_COUNT;i++){
+      const path=framePath(dir,i);
+      const img=new Image();
+      img.onload=()=>frameCache.set(path,true);
+      img.onerror=()=>frameCache.set(path,false);
+      img.src=path;
+    }
+  });
+}
+function setFrame(dir,idx){
+  const requested=framePath(dir,idx);
+  const fallback=framePath(dir,0);
+  const probe=new Image();
+  probe.onload=()=>{
+    lastValidFrame=requested;
+    if(playerImg.src.split('/').pop()!==requested.split('/').pop()) playerImg.src=requested;
+  };
+  probe.onerror=()=>{
+    const fb=new Image();
+    fb.onload=()=>{
+      lastValidFrame=fallback;
+      playerImg.src=fallback;
+    };
+    fb.onerror=()=>{ playerImg.src=lastValidFrame; };
+    fb.src=fallback;
+  };
+  probe.src=requested;
+}
+playerImg.addEventListener('error',()=>{
+  if(playerImg.src!==lastValidFrame) playerImg.src=lastValidFrame;
+});
 function startWalking(dir){facing=dir;if(state.settings.motion){setFrame(dir,0);return}if(!walkClock){setFrame(dir,0);walkClock=setInterval(()=>{walkFrame=(walkFrame+1)%4;setFrame(facing,walkFrame)},120)}}
 function stopWalking(){if(walkClock){clearInterval(walkClock);walkClock=null}walkFrame=0;setFrame(facing,0)}
 function moveDir(dir){
@@ -432,4 +474,4 @@ window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setT
 window.addEventListener('orientationchange',()=>setTimeout(()=>{sizeWorldForDevice();renderClues();centerCamera(false)},220));
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-applySettings();setFrame('right',0);renderRoom();announce('Ética em Jogo carregado. Use Casos éticos para abrir a biblioteca completa de situações sobre publicação e reconhecimento de contribuições.');
+preloadFrames();applySettings();setFrame('right',0);renderRoom();announce('Ética em Jogo carregado. Use Casos éticos para abrir a biblioteca completa de situações sobre publicação e reconhecimento de contribuições.');

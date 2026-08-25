@@ -82,3 +82,11 @@ VERSÃO 12 — FRENTE E TRÁS VISÍVEIS
 • perspectiva dinâmica: o personagem fica menor no fundo e maior na frente;
 • indicador visível mostra FRENTE, MEIO ou FUNDO;
 • mantidos obstáculos, salto, pistas no quarto e responsividade.
+
+VERSÃO 13 — PROTEÇÃO CONTRA SPRITE QUEBRADO
+• não é necessária imagem separada para o personagem pequeno;
+• os 16 frames front/back/left/right são pré-carregados;
+• se um frame falhar, o jogo mantém automaticamente o último sprite válido;
+• fallback adicional usa o frame 0 da direção atual;
+• todos os sprites entram no cache do PWA;
+• cache atualizado para evitar reaproveitar arquivos antigos quebrados.
