@@ -73,3 +73,12 @@ VERSÃO 11 — MOVIMENTO EM 4 DIREÇÕES E OBSTÁCULOS
 • colisão impede atravessar obstáculos no chão; salto libera a passagem;
 • pistas distribuídas também no quarto;
 • jogador mantém exploração horizontal responsiva e câmera móvel.
+
+VERSÃO 12 — FRENTE E TRÁS VISÍVEIS
+• botão ▲ agora significa TRÁS/fundo do cenário;
+• botão ▼ significa FRENTE;
+• personagem usa sprites traseiros ao caminhar para o fundo e frontais ao voltar;
+• movimento vertical ficou mais amplo e perceptível;
+• perspectiva dinâmica: o personagem fica menor no fundo e maior na frente;
+• indicador visível mostra FRENTE, MEIO ou FUNDO;
+• mantidos obstáculos, salto, pistas no quarto e responsividade.

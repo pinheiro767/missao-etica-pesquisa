@@ -173,9 +173,32 @@ function applySettings(){
  $('#contrastToggle')?.setAttribute('aria-pressed',String(state.settings.contrast));$('#motionToggle')?.setAttribute('aria-pressed',String(state.settings.motion));$('#ttsToggle')?.setAttribute('aria-pressed',String(state.settings.tts));$('#soundToggle')?.setAttribute('aria-pressed',String(state.settings.sound));$('#soundBtn')?.setAttribute('aria-pressed',String(state.settings.sound));
  if($('#soundBtn'))$('#soundBtn').textContent=state.settings.sound?'🔊':'🔇';if($('#volumeRange'))$('#volumeRange').value=Math.round(state.settings.volume*100);if($('#volumeValue'))$('#volumeValue').textContent=Math.round(state.settings.volume*100)+'%';
 }
+
+function applyDepthVisual(){
+  // y=7 = frente; y=43 = fundo.
+  const t=(state.y-7)/(43-7);
+  const scale=1.14-(t*0.36);
+  const z=Math.round(100-(t*60));
+  player.style.transform=`scale(${scale})`;
+  player.style.zIndex=String(z);
+  player.dataset.depth=t<0.33?'frente':t>0.66?'fundo':'meio';
+}
+
 function paintStats(){$('#energy').textContent=Math.round(state.energy);$('#knowledge').textContent=Math.round(state.knowledge);$('#reputation').textContent=Math.round(state.reputation);$('#ethics').textContent=Math.round(state.ethics)}
 function updateObjective(){const n=state.done.length,total=CASES.length,here=cluesHere().filter(c=>!state.done.includes(c.id)).length;$('#objective').textContent=n<total?`Exploração ética: ${n}/${total} pistas resolvidas · ${here} neste cenário. Caminhe e procure os ? brilhantes.`:`Todas as ${total} pistas resolvidas!`;}
-function renderRoom(){scene.className='scene '+state.room;sizeWorldForDevice();player.style.left=state.x+'%';player.style.bottom=state.y+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderObstacles();renderClues();requestAnimationFrame(()=>centerCamera(false));persist()}
+
+function updateDepthIndicator(){
+ let el=document.getElementById('depthIndicator');
+ if(!el){
+   el=document.createElement('div');
+   el.id='depthIndicator';el.className='depthIndicator';
+   scene.appendChild(el);
+ }
+ const zone=state.y<18?'FRENTE':state.y>32?'FUNDO':'MEIO';
+ el.textContent=`Profundidade: ${zone}`;
+}
+
+function renderRoom(){scene.className='scene '+state.room;sizeWorldForDevice();player.style.left=state.x+'%';player.style.bottom=state.y+'%';applyDepthVisual();$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderObstacles();renderClues();updateDepthIndicator();requestAnimationFrame(()=>centerCamera(false));persist()}
 
 
 function sizeWorldForDevice(){
@@ -210,17 +233,19 @@ function moveDir(dir){
  let nx=state.x,ny=state.y;
  if(dir==='left')nx-=1.5;
  if(dir==='right')nx+=1.5;
- if(dir==='up')ny+=1.35;
- if(dir==='down')ny-=1.35;
+ if(dir==='up')ny+=2.25;
+ if(dir==='down')ny-=2.25;
  nx=Math.max(2,Math.min(86,nx));ny=Math.max(7,Math.min(43,ny));
  const face=dir==='up'?'back':dir==='down'?'front':dir;
  startWalking(face);
- if(!blocked(nx,ny)){state.x=nx;state.y=ny;player.style.left=state.x+'%';player.style.bottom=state.y+'%';state.energy=clamp(state.energy-.035);}
+ if(dir==='up') announce('Andando para trás, em direção ao fundo do cenário.');
+ if(dir==='down') announce('Andando para frente, em direção à frente do cenário.');
+ if(!blocked(nx,ny)){state.x=nx;state.y=ny;player.style.left=state.x+'%';player.style.bottom=state.y+'%';applyDepthVisual();state.energy=clamp(state.energy-.035);}
  else{playSound('warning');announce('Há um obstáculo. Pule para atravessar.');}
  const now=performance.now();
  if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}
  if(now-lastStepSound>340){playSound('step');lastStepSound=now}
- updateNearbyClue();centerCamera(false);persist();clearTimeout(moveDir._t);moveDir._t=setTimeout(stopWalking,170);
+ updateNearbyClue();updateDepthIndicator();centerCamera(false);persist();clearTimeout(moveDir._t);moveDir._t=setTimeout(stopWalking,170);
 }
 
 function open(html,immersive=false){content.innerHTML=html;modal.classList.remove('hidden');modal.classList.toggle('immersive',immersive);playSound('click');announce(content.innerText);setTimeout(()=>modal.querySelector('.panel')?.focus(),20);if(state.settings.tts)speak(content.innerText)}
@@ -383,7 +408,7 @@ $('#volumeRange').oninput=e=>{state.settings.volume=Number(e.target.value)/100;a
 
 window.resetGame=()=>{if(confirm('Reiniciar pontuação e casos concluídos?')){localStorage.removeItem('eticaGameStateV11');location.reload()}};
 
-$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#jumpBtn').onclick=jump;$('#actionBtn').onclick=()=>open(`<h2>Como jogar</h2><p>Use ▲ ▼ ◀ ▶ no celular ou W/A/S/D e setas no teclado para caminhar em quatro direções. Pule obstáculos com <b>PULAR</b> ou a barra de espaço e procure os <b>?</b> brilhantes. Ao chegar perto, toque em <b>Investigar pista</b>. Cada pista revela um card imersivo com um dilema de ética na publicação.</p><p>Use o Mapa para explorar os demais ambientes.</p>`);$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
+$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#jumpBtn').onclick=jump;$('#actionBtn').onclick=()=>open(`<h2>Como jogar</h2><p>Use ▲ TRÁS e ▼ FRENTE no celular. No teclado, W/↑ leva o personagem para o fundo e S/↓ traz o personagem para a frente. Pule obstáculos com <b>PULAR</b> ou a barra de espaço e procure os <b>?</b> brilhantes. Ao chegar perto, toque em <b>Investigar pista</b>. Cada pista revela um card imersivo com um dilema de ética na publicação.</p><p>Use o Mapa para explorar os demais ambientes.</p>`);$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
 
 document.querySelectorAll('[data-move]').forEach(b=>{let timer=null;const dir=b.dataset.move;const start=e=>{e.preventDefault();moveDir(dir);timer=setInterval(()=>moveDir(dir),95)};const end=()=>{if(timer){clearInterval(timer);timer=null}stopWalking()};b.addEventListener('pointerdown',start);b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);b.addEventListener('pointerleave',end)});
 
