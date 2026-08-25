@@ -53,3 +53,13 @@ VERSÃO 7 — EXEMPLO GENÉRICO + PONTUAÇÃO INTERATIVA
 • após cada decisão, o jogo mostra ganho/perda por atributo e o valor atualizado;
 • HUD superior recebe destaque visual positivo/negativo conforme a escolha;
 • animações respeitam a preferência de redução de movimento.
+
+VERSÃO 10 — RESPONSIVIDADE E CÂMERA
+• cenário mantém proporção jogável em celulares em modo retrato;
+• em telas estreitas o mapa vira um mundo horizontal navegável, em vez de ser espremido;
+• câmera acompanha automaticamente o personagem;
+• jogador inicia na borda esquerda e o cenário é revelado conforme caminha;
+• interface compacta em celular e landscape;
+• controles maiores para toque e suporte a safe areas/notch;
+• adaptação automática em rotação de tela e redimensionamento;
+• mantidos pistas, cards imersivos, acessibilidade, pontuação e vídeo final.

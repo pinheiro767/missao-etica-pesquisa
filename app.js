@@ -174,13 +174,38 @@ function applySettings(){
 }
 function paintStats(){$('#energy').textContent=Math.round(state.energy);$('#knowledge').textContent=Math.round(state.knowledge);$('#reputation').textContent=Math.round(state.reputation);$('#ethics').textContent=Math.round(state.ethics)}
 function updateObjective(){const n=state.done.length,total=CASES.length,here=cluesHere().filter(c=>!state.done.includes(c.id)).length;$('#objective').textContent=n<total?`Exploração ética: ${n}/${total} pistas resolvidas · ${here} neste cenário. Caminhe e procure os ? brilhantes.`:`Todas as ${total} pistas resolvidas!`;}
-function renderRoom(){scene.className='scene '+state.room;player.style.left=state.x+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderClues();persist()}
+function renderRoom(){scene.className='scene '+state.room;sizeWorldForDevice();player.style.left=state.x+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderClues();requestAnimationFrame(()=>centerCamera(false));persist()}
+
+
+function sizeWorldForDevice(){
+  const game=$('#game');
+  if(!game||!scene)return;
+  const vw=game.clientWidth||window.innerWidth;
+  const vh=game.clientHeight||Math.max(320,window.innerHeight*0.65);
+  const portrait=vw<760 && vw<vh;
+  const compact=vw<760;
+  // Keep a landscape playfield on narrow portrait phones instead of crushing the scene.
+  const target=portrait?Math.max(vw,Math.round(vh*1.78),860):compact?Math.max(vw,760):vw;
+  scene.style.width=target+'px';
+  scene.style.minWidth=target+'px';
+  scene.style.height='100%';
+  requestAnimationFrame(()=>centerCamera(false));
+}
+function centerCamera(smooth=true){
+  const game=$('#game');
+  if(!game||!scene)return;
+  const playerCenter=(state.x/100)*scene.scrollWidth + (player.offsetWidth/2);
+  const max=Math.max(0,scene.scrollWidth-game.clientWidth);
+  const desired=Math.max(0,Math.min(max,playerCenter-game.clientWidth*0.5));
+  try{game.scrollTo({left:desired,behavior:(smooth&&!state.settings.motion)?'smooth':'auto'});}
+  catch(e){game.scrollLeft=desired;}
+}
 
 let facing='right',walkFrame=0,walkClock=null;
 function setFrame(dir,idx){playerImg.src=`assets/hero_frames/${dir}_${idx}.png`}
 function startWalking(dir){facing=dir;if(state.settings.motion){setFrame(dir,0);return}if(!walkClock){setFrame(dir,0);walkClock=setInterval(()=>{walkFrame=(walkFrame+1)%4;setFrame(facing,walkFrame)},120)}}
 function stopWalking(){if(walkClock){clearInterval(walkClock);walkClock=null}walkFrame=0;setFrame(facing,0)}
-function move(dx){startWalking(dx<0?'left':'right');state.x=Math.max(2,Math.min(82,state.x+dx));player.style.left=state.x+'%';state.energy=clamp(state.energy-.035);const now=performance.now();if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}if(now-lastStepSound>340){playSound('step');lastStepSound=now}updateNearbyClue();persist();clearTimeout(move._t);move._t=setTimeout(stopWalking,170)}
+function move(dx){startWalking(dx<0?'left':'right');state.x=Math.max(2,Math.min(82,state.x+dx));player.style.left=state.x+'%';state.energy=clamp(state.energy-.035);const now=performance.now();if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}if(now-lastStepSound>340){playSound('step');lastStepSound=now}updateNearbyClue();centerCamera(false);persist();clearTimeout(move._t);move._t=setTimeout(stopWalking,170)}
 
 function open(html,immersive=false){content.innerHTML=html;modal.classList.remove('hidden');modal.classList.toggle('immersive',immersive);playSound('click');announce(content.innerText);setTimeout(()=>modal.querySelector('.panel')?.focus(),20);if(state.settings.tts)speak(content.innerText)}
 function close(){modal.classList.add('hidden');modal.classList.remove('immersive');if('speechSynthesis'in window)speechSynthesis.cancel();announce('Janela fechada.')}
@@ -331,6 +356,11 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{keys.delete(e.key);if(!keys.size&&keyLoop){clearInterval(keyLoop);keyLoop=null;stopWalking()}});
 
 document.querySelectorAll('.portal').forEach(p=>{p.setAttribute('role','button');p.setAttribute('tabindex','0');p.setAttribute('aria-label',`Ir para ${labels[p.dataset.room]}`);p.onclick=()=>goRoom(p.dataset.room);p.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goRoom(p.dataset.room)}}});
+
+
+let resizeTimer=null;
+window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{sizeWorldForDevice();renderClues();centerCamera(false)},120)});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{sizeWorldForDevice();renderClues();centerCamera(false)},220));
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 applySettings();setFrame('right',0);renderRoom();announce('Ética em Jogo carregado. Use Casos éticos para abrir a biblioteca completa de situações sobre publicação e reconhecimento de contribuições.');
