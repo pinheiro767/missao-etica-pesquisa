@@ -63,3 +63,13 @@ VERSÃO 10 — RESPONSIVIDADE E CÂMERA
 • controles maiores para toque e suporte a safe areas/notch;
 • adaptação automática em rotação de tela e redimensionamento;
 • mantidos pistas, cards imersivos, acessibilidade, pontuação e vídeo final.
+
+VERSÃO 11 — MOVIMENTO EM 4 DIREÇÕES E OBSTÁCULOS
+• personagem anda para esquerda/direita, frente e trás;
+• frames frontais e traseiros extraídos do sprite sheet original;
+• controles por setas/WASD e D-pad completo no celular;
+• botão PULAR e barra de espaço para saltar;
+• obstáculos físicos distribuídos pelos ambientes;
+• colisão impede atravessar obstáculos no chão; salto libera a passagem;
+• pistas distribuídas também no quarto;
+• jogador mantém exploração horizontal responsiva e câmera móvel.

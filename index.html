@@ -38,7 +38,15 @@
   </main>
 
   <nav class="controls">
-    <button data-move="left">◀</button><button data-move="right">▶</button><button id="actionBtn">Como jogar</button><button id="mapBtn">Mapa</button>
+    <div class="dpad" aria-label="Controles de movimento">
+      <button data-move="up" aria-label="Andar para trás">▲</button>
+      <button data-move="left" aria-label="Andar para a esquerda">◀</button>
+      <button data-move="down" aria-label="Andar para frente">▼</button>
+      <button data-move="right" aria-label="Andar para a direita">▶</button>
+    </div>
+    <button id="jumpBtn" class="jumpBtn">PULAR</button>
+    <button id="actionBtn">Como jogar</button>
+    <button id="mapBtn">Mapa</button>
   </nav>
 </div>
 

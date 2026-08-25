@@ -150,10 +150,11 @@ const scene=$('#scene'),player=$('#player'),playerImg=$('#player img'),modal=$('
 const srLive=$('#srLive'),accessPanel=$('#accessPanel');
 
 let state;
-try{state=JSON.parse(localStorage.getItem('eticaGameStateV9')||'null')}catch(e){state=null}
-if(!state) state={version:9,room:'campus',x:4,energy:80,knowledge:35,reputation:50,ethics:50,done:[],settings:{}};
+try{state=JSON.parse(localStorage.getItem('eticaGameStateV11')||'null')}catch(e){state=null}
+if(!state) state={version:11,room:'campus',x:4,y:9,energy:80,knowledge:35,reputation:50,ethics:50,done:[],settings:{}};
 state.room=rooms[state.room]?state.room:'classroom';
 state.x=Number.isFinite(state.x)?state.x:4;
+state.y=Number.isFinite(state.y)?state.y:9;
 state.done=Array.isArray(state.done)?[...new Set(state.done.filter(id=>CASES.some(c=>c.id===id)))]:[];
 state.settings=Object.assign({sound:true,volume:.70,tts:false,font:'normal',contrast:false,motion:false},state.settings||{});
 
@@ -161,7 +162,7 @@ const sfx={click:new Audio('assets/audio/click.wav'),success:new Audio('assets/a
 Object.values(sfx).forEach(a=>a.preload='auto');
 
 let saveTimer=null,lastStepSound=0,lastEnergyPaint=0;
-function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem('eticaGameStateV9',JSON.stringify(state))}catch(e){}},300)}
+function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem('eticaGameStateV11',JSON.stringify(state))}catch(e){}},300)}
 function playSound(name){if(!state.settings.sound||state.settings.volume<=0||!sfx[name])return;try{const a=sfx[name].cloneNode();a.volume=state.settings.volume;a.play().catch(()=>{})}catch(e){}}
 function announce(t){if(!srLive)return;srLive.textContent='';setTimeout(()=>srLive.textContent=t,20)}
 function speak(t,force=false){if(!('speechSynthesis'in window)||(!state.settings.tts&&!force))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]*>/g,' '));u.lang='pt-BR';u.rate=.95;speechSynthesis.speak(u)}
@@ -174,7 +175,7 @@ function applySettings(){
 }
 function paintStats(){$('#energy').textContent=Math.round(state.energy);$('#knowledge').textContent=Math.round(state.knowledge);$('#reputation').textContent=Math.round(state.reputation);$('#ethics').textContent=Math.round(state.ethics)}
 function updateObjective(){const n=state.done.length,total=CASES.length,here=cluesHere().filter(c=>!state.done.includes(c.id)).length;$('#objective').textContent=n<total?`Exploração ética: ${n}/${total} pistas resolvidas · ${here} neste cenário. Caminhe e procure os ? brilhantes.`:`Todas as ${total} pistas resolvidas!`;}
-function renderRoom(){scene.className='scene '+state.room;sizeWorldForDevice();player.style.left=state.x+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderClues();requestAnimationFrame(()=>centerCamera(false));persist()}
+function renderRoom(){scene.className='scene '+state.room;sizeWorldForDevice();player.style.left=state.x+'%';player.style.bottom=state.y+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderObstacles();renderClues();requestAnimationFrame(()=>centerCamera(false));persist()}
 
 
 function sizeWorldForDevice(){
@@ -205,7 +206,22 @@ let facing='right',walkFrame=0,walkClock=null;
 function setFrame(dir,idx){playerImg.src=`assets/hero_frames/${dir}_${idx}.png`}
 function startWalking(dir){facing=dir;if(state.settings.motion){setFrame(dir,0);return}if(!walkClock){setFrame(dir,0);walkClock=setInterval(()=>{walkFrame=(walkFrame+1)%4;setFrame(facing,walkFrame)},120)}}
 function stopWalking(){if(walkClock){clearInterval(walkClock);walkClock=null}walkFrame=0;setFrame(facing,0)}
-function move(dx){startWalking(dx<0?'left':'right');state.x=Math.max(2,Math.min(82,state.x+dx));player.style.left=state.x+'%';state.energy=clamp(state.energy-.035);const now=performance.now();if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}if(now-lastStepSound>340){playSound('step');lastStepSound=now}updateNearbyClue();centerCamera(false);persist();clearTimeout(move._t);move._t=setTimeout(stopWalking,170)}
+function moveDir(dir){
+ let nx=state.x,ny=state.y;
+ if(dir==='left')nx-=1.5;
+ if(dir==='right')nx+=1.5;
+ if(dir==='up')ny+=1.35;
+ if(dir==='down')ny-=1.35;
+ nx=Math.max(2,Math.min(86,nx));ny=Math.max(7,Math.min(43,ny));
+ const face=dir==='up'?'back':dir==='down'?'front':dir;
+ startWalking(face);
+ if(!blocked(nx,ny)){state.x=nx;state.y=ny;player.style.left=state.x+'%';player.style.bottom=state.y+'%';state.energy=clamp(state.energy-.035);}
+ else{playSound('warning');announce('Há um obstáculo. Pule para atravessar.');}
+ const now=performance.now();
+ if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}
+ if(now-lastStepSound>340){playSound('step');lastStepSound=now}
+ updateNearbyClue();centerCamera(false);persist();clearTimeout(moveDir._t);moveDir._t=setTimeout(stopWalking,170);
+}
 
 function open(html,immersive=false){content.innerHTML=html;modal.classList.remove('hidden');modal.classList.toggle('immersive',immersive);playSound('click');announce(content.innerText);setTimeout(()=>modal.querySelector('.panel')?.focus(),20);if(state.settings.tts)speak(content.innerText)}
 function close(){modal.classList.add('hidden');modal.classList.remove('immersive');if('speechSynthesis'in window)speechSynthesis.cancel();announce('Janela fechada.')}
@@ -243,10 +259,37 @@ function flashHud(deltas){
 }
 function getCase(id){return CASES.find(c=>c.id===id)}
 function firstUndone(){return CASES.find(x=>!state.done.includes(x.id))||CASES[0]}
-const CLUE_ROOMS=['campus','classroom','library','laboratory','computer_lab','cafeteria'];const CLUE_X=[16,36,58,76,24,48,70,84,30,62,80,42];
-function clueData(){return CASES.map((c,i)=>({id:c.id,room:CLUE_ROOMS[i%CLUE_ROOMS.length],x:CLUE_X[i%CLUE_X.length],n:i+1}))}function cluesHere(){return clueData().filter(c=>c.room===state.room)}
-function nearestClue(){const a=cluesHere().filter(c=>!state.done.includes(c.id));let b=null,d=999;for(const c of a){let x=Math.abs(state.x-c.x);if(x<d){b=c;d=x}}return b&&d<=9?b:null}
-function renderClues(){scene.querySelectorAll('.worldClue').forEach(e=>e.remove());cluesHere().forEach(c=>{const done=state.done.includes(c.id),b=document.createElement('button');b.className='worldClue'+(done?' solved':'');b.style.left=c.x+'%';b.dataset.case=c.id;b.innerHTML=`<span class="clueGlow"></span><span class="clueIcon">${done?'✓':'?'}</span><small>${done?'CONCLUÍDA':'PISTA '+c.n}</small>`;b.onclick=()=>Math.abs(state.x-c.x)<=9?(done?openCase(c.id):revealClue(c.id)):(playSound('warning'),announce('Aproxime-se da pista.'));scene.appendChild(b)});updateNearbyClue()}
+const CLUE_ROOMS=['campus','classroom','library','laboratory','computer_lab','cafeteria','bedroom'];const CLUE_X=[16,36,58,76,24,48,70,84,30,62,80,42];
+function clueData(){return CASES.map((c,i)=>({id:c.id,room:CLUE_ROOMS[i%CLUE_ROOMS.length],x:CLUE_X[i%CLUE_X.length],y:[12,26,38,18,34,22,30,16,36,24,40,20,32,14,28][i%15],n:i+1}))}function cluesHere(){return clueData().filter(c=>c.room===state.room)}
+function nearestClue(){const a=cluesHere().filter(c=>!state.done.includes(c.id));let b=null,d=999;for(const c of a){let x=Math.hypot(state.x-c.x,(state.y-c.y)*1.15);if(x<d){b=c;d=x}}return b&&d<=9?b:null}
+
+const ROOM_OBSTACLES={
+ campus:[{x:28,y:11,t:'📚'},{x:52,y:18,t:'🎒'},{x:73,y:28,t:'📦'}],
+ classroom:[{x:30,y:15,t:'📚'},{x:56,y:27,t:'🪑'},{x:77,y:17,t:'🎒'}],
+ library:[{x:25,y:22,t:'📚'},{x:50,y:34,t:'📦'},{x:74,y:16,t:'📚'}],
+ laboratory:[{x:31,y:18,t:'🧰'},{x:59,y:30,t:'📦'},{x:76,y:14,t:'🧪'}],
+ computer_lab:[{x:27,y:14,t:'🪑'},{x:53,y:28,t:'💻'},{x:75,y:19,t:'📦'}],
+ cafeteria:[{x:32,y:16,t:'🪑'},{x:57,y:29,t:'📦'},{x:78,y:13,t:'🪑'}],
+ bedroom:[{x:24,y:15,t:'🎒'},{x:48,y:28,t:'📚'},{x:72,y:18,t:'🧺'}],
+ creators_room:[{x:36,y:18,t:'📚'},{x:68,y:27,t:'🏆'}]
+};
+let isJumping=false;
+function obstaclesHere(){return ROOM_OBSTACLES[state.room]||[]}
+function renderObstacles(){
+ scene.querySelectorAll('.worldObstacle').forEach(e=>e.remove());
+ obstaclesHere().forEach((o,i)=>{const d=document.createElement('div');d.className='worldObstacle';d.style.left=o.x+'%';d.style.bottom=o.y+'%';d.setAttribute('aria-hidden','true');d.innerHTML=`<span>${o.t}</span>`;scene.appendChild(d);});
+}
+function blocked(nx,ny){
+ if(isJumping)return false;
+ return obstaclesHere().some(o=>Math.hypot(nx-o.x,(ny-o.y)*1.1)<7.2);
+}
+function jump(){
+ if(isJumping)return;
+ isJumping=true;player.classList.add('jumping');playSound('click');announce('Personagem pulando.');
+ setTimeout(()=>{isJumping=false;player.classList.remove('jumping')},620);
+}
+
+function renderClues(){scene.querySelectorAll('.worldClue').forEach(e=>e.remove());cluesHere().forEach(c=>{const done=state.done.includes(c.id),b=document.createElement('button');b.className='worldClue'+(done?' solved':'');b.style.left=c.x+'%';b.style.bottom=c.y+'%';b.dataset.case=c.id;b.innerHTML=`<span class="clueGlow"></span><span class="clueIcon">${done?'✓':'?'}</span><small>${done?'CONCLUÍDA':'PISTA '+c.n}</small>`;b.onclick=()=>Math.hypot(state.x-c.x,(state.y-c.y)*1.15)<=9?(done?openCase(c.id):revealClue(c.id)):(playSound('warning'),announce('Aproxime-se da pista.'));scene.appendChild(b)});updateNearbyClue()}
 function updateNearbyClue(){const c=nearestClue(),b=$('#interactBtn');b.textContent=c?'🔎 INVESTIGAR PISTA':'INTERAGIR';b.classList.toggle('ready',!!c);scene.querySelectorAll('.worldClue').forEach(e=>e.classList.toggle('near',!!c&&e.dataset.case===c.id))}
 window.revealClue=id=>{const m=getCase(id);if(!m)return;playSound('mission');open(`<section class="clueReveal"><div class="clueSeal">🔎</div><div class="kicker">PISTA DESCOBERTA</div><h2>${m.title}</h2><p class="clueLead">Você encontrou uma situação de ética acadêmica escondida neste ambiente.</p><div class="clueMiniScene"><b>${m.kicker}</b><p>${m.scene}</p></div><button class="choice primary" onclick="openCase('${id}')">REVELAR DESAFIO →</button><button class="choice" onclick="closeGameModal()">Continuar explorando</button></section>`,true)}
 
@@ -323,7 +366,7 @@ window.openCaseLibrary=(cat='Todos')=>{
 function mission(){const c=nearestClue();if(c)return revealClue(c.id);playSound('warning');announce('Caminhe e aproxime-se de uma pista brilhante.')}
 function map(){open(`<h2>Mapa do campus</h2><p>Escolha um ambiente.</p><div class="mapgrid">${Object.keys(rooms).map(r=>`<button onclick="goRoom('${r}');closeGameModal()">${labels[r]}</button>`).join('')}</div>`)}
 function menu(){open(`<h2>Menu</h2><div class="choices"><button class="choice primary" onclick="openCaseLibrary()">Casos de ética em publicação</button><button class="choice" onclick="map()">Mapa</button><button class="choice" onclick="openAccessibility()">♿ Acessibilidade</button><button class="choice" onclick="showCredits()">Créditos do jogo</button><button class="choice" onclick="resetGame()">Reiniciar progresso</button></div>`)}
-window.goRoom=r=>{if(!rooms[r])return;state.room=r;state.x=4;renderRoom();playSound('click');announce(`Ambiente: ${labels[r]}`);if(state.settings.tts)speak(`Você entrou em ${labels[r]}.`)};
+window.goRoom=r=>{if(!rooms[r])return;state.room=r;state.x=4;state.y=9;renderRoom();playSound('click');announce(`Ambiente: ${labels[r]}`);if(state.settings.tts)speak(`Você entrou em ${labels[r]}.`)};
 window.map=map;
 window.showCredits=()=>open(`<h2>Créditos e autoria do próprio jogo</h2><p>Este espaço deve demonstrar, na prática, o princípio ensinado pelos casos.</p><div class="credits"><div class="creditCard"><b>Concepção e conteúdo acadêmico</b><br>Inserir os nomes de quem definiu a proposta, os dilemas e a fundamentação pedagógica.</div><div class="creditCard"><b>Programação e integração PWA</b><br>Inserir quem desenvolveu ou integrou o código e a lógica.</div><div class="creditCard"><b>Arte e assets</b><br>Registrar criação, seleção, adaptação e revisão das imagens.</div><div class="creditCard"><b>Testes, acessibilidade e revisão</b><br>Registrar estudantes e colaboradores conforme participação efetiva.</div><div class="creditCard"><b>Agradecimentos</b><br>Reconhecer apoio técnico, logístico ou institucional que não se enquadre como autoria, com descrição adequada.</div></div><p><small>Os nomes devem ser inseridos conforme a contribuição real e as regras do contexto em que o jogo for apresentado ou publicado.</small></p>`,true);
 
@@ -338,17 +381,18 @@ $('#soundToggle').onclick=()=>{state.settings.sound=!state.settings.sound;applyS
 $('#soundBtn').onclick=()=>$('#soundToggle').click();
 $('#volumeRange').oninput=e=>{state.settings.volume=Number(e.target.value)/100;applySettings();persist()};$('#volumeRange').onchange=()=>playSound('click');
 
-window.resetGame=()=>{if(confirm('Reiniciar pontuação e casos concluídos?')){localStorage.removeItem('eticaGameStateV9');location.reload()}};
+window.resetGame=()=>{if(confirm('Reiniciar pontuação e casos concluídos?')){localStorage.removeItem('eticaGameStateV11');location.reload()}};
 
-$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#actionBtn').onclick=()=>open(`<h2>Como jogar</h2><p>Caminhe com ◀ ▶ ou A/D. Procure os <b>?</b> brilhantes. Ao chegar perto, toque em <b>Investigar pista</b>. Cada pista revela um card imersivo com um dilema de ética na publicação.</p><p>Use o Mapa para explorar os demais ambientes.</p>`);$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
+$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#jumpBtn').onclick=jump;$('#actionBtn').onclick=()=>open(`<h2>Como jogar</h2><p>Use ▲ ▼ ◀ ▶ no celular ou W/A/S/D e setas no teclado para caminhar em quatro direções. Pule obstáculos com <b>PULAR</b> ou a barra de espaço e procure os <b>?</b> brilhantes. Ao chegar perto, toque em <b>Investigar pista</b>. Cada pista revela um card imersivo com um dilema de ética na publicação.</p><p>Use o Mapa para explorar os demais ambientes.</p>`);$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
 
-document.querySelectorAll('[data-move]').forEach(b=>{let timer=null;const d=b.dataset.move==='left'?-1.8:1.8;const start=e=>{e.preventDefault();move(d);timer=setInterval(()=>move(d),95)};const end=()=>{if(timer){clearInterval(timer);timer=null}stopWalking()};b.addEventListener('pointerdown',start);b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);b.addEventListener('pointerleave',end)});
+document.querySelectorAll('[data-move]').forEach(b=>{let timer=null;const dir=b.dataset.move;const start=e=>{e.preventDefault();moveDir(dir);timer=setInterval(()=>moveDir(dir),95)};const end=()=>{if(timer){clearInterval(timer);timer=null}stopWalking()};b.addEventListener('pointerdown',start);b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);b.addEventListener('pointerleave',end)});
 
 const keys=new Set();let keyLoop=null;
 document.addEventListener('keydown',e=>{
  if(e.key==='Escape'){if(!accessPanel.classList.contains('hidden'))closeAccessibility();else if(!modal.classList.contains('hidden'))close();return}
  if(e.key.toLowerCase()==='r'&&!e.ctrlKey&&!e.metaKey){e.preventDefault();speak(!modal.classList.contains('hidden')?content.innerText:`${labels[state.room]}. ${$('#objective').innerText}`,true);return}
- if(['ArrowLeft','ArrowRight','a','d'].includes(e.key)){e.preventDefault();keys.add(e.key);if(!keyLoop)keyLoop=setInterval(()=>{if(keys.has('ArrowLeft')||keys.has('a'))move(-1.4);if(keys.has('ArrowRight')||keys.has('d'))move(1.4)},85)}
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s'].includes(e.key)){e.preventDefault();keys.add(e.key);if(!keyLoop)keyLoop=setInterval(()=>{if(keys.has('ArrowLeft')||keys.has('a'))moveDir('left');if(keys.has('ArrowRight')||keys.has('d'))moveDir('right');if(keys.has('ArrowUp')||keys.has('w'))moveDir('up');if(keys.has('ArrowDown')||keys.has('s'))moveDir('down')},85)}
+ if(e.code==='Space'){e.preventDefault();jump()}
  if((e.key==='e'||e.key==='Enter')&&modal.classList.contains('hidden'))mission();
  if(e.key.toLowerCase()==='m'&&modal.classList.contains('hidden'))map();
  
