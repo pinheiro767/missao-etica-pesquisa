@@ -150,10 +150,10 @@ const scene=$('#scene'),player=$('#player'),playerImg=$('#player img'),modal=$('
 const srLive=$('#srLive'),accessPanel=$('#accessPanel');
 
 let state;
-try{state=JSON.parse(localStorage.getItem('eticaGameStateV6')||'null')}catch(e){state=null}
-if(!state) state={version:6,room:'classroom',x:42,energy:80,knowledge:35,reputation:50,ethics:50,done:[],settings:{}};
+try{state=JSON.parse(localStorage.getItem('eticaGameStateV9')||'null')}catch(e){state=null}
+if(!state) state={version:9,room:'campus',x:4,energy:80,knowledge:35,reputation:50,ethics:50,done:[],settings:{}};
 state.room=rooms[state.room]?state.room:'classroom';
-state.x=Number.isFinite(state.x)?state.x:42;
+state.x=Number.isFinite(state.x)?state.x:4;
 state.done=Array.isArray(state.done)?[...new Set(state.done.filter(id=>CASES.some(c=>c.id===id)))]:[];
 state.settings=Object.assign({sound:true,volume:.70,tts:false,font:'normal',contrast:false,motion:false},state.settings||{});
 
@@ -161,7 +161,7 @@ const sfx={click:new Audio('assets/audio/click.wav'),success:new Audio('assets/a
 Object.values(sfx).forEach(a=>a.preload='auto');
 
 let saveTimer=null,lastStepSound=0,lastEnergyPaint=0;
-function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem('eticaGameStateV6',JSON.stringify(state))}catch(e){}},300)}
+function persist(){clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem('eticaGameStateV9',JSON.stringify(state))}catch(e){}},300)}
 function playSound(name){if(!state.settings.sound||state.settings.volume<=0||!sfx[name])return;try{const a=sfx[name].cloneNode();a.volume=state.settings.volume;a.play().catch(()=>{})}catch(e){}}
 function announce(t){if(!srLive)return;srLive.textContent='';setTimeout(()=>srLive.textContent=t,20)}
 function speak(t,force=false){if(!('speechSynthesis'in window)||(!state.settings.tts&&!force))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]*>/g,' '));u.lang='pt-BR';u.rate=.95;speechSynthesis.speak(u)}
@@ -173,14 +173,14 @@ function applySettings(){
  if($('#soundBtn'))$('#soundBtn').textContent=state.settings.sound?'🔊':'🔇';if($('#volumeRange'))$('#volumeRange').value=Math.round(state.settings.volume*100);if($('#volumeValue'))$('#volumeValue').textContent=Math.round(state.settings.volume*100)+'%';
 }
 function paintStats(){$('#energy').textContent=Math.round(state.energy);$('#knowledge').textContent=Math.round(state.knowledge);$('#reputation').textContent=Math.round(state.reputation);$('#ethics').textContent=Math.round(state.ethics)}
-function updateObjective(){const n=state.done.length,total=CASES.length;$('#objective').textContent=n<total?`${n}/${total} casos concluídos · toque em “Casos éticos” para escolher qualquer situação.`:`Todos os ${total} casos concluídos · visite a Sala dos Criadores.`}
-function renderRoom(){scene.className='scene '+state.room;player.style.left=state.x+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();persist()}
+function updateObjective(){const n=state.done.length,total=CASES.length,here=cluesHere().filter(c=>!state.done.includes(c.id)).length;$('#objective').textContent=n<total?`Exploração ética: ${n}/${total} pistas resolvidas · ${here} neste cenário. Caminhe e procure os ? brilhantes.`:`Todas as ${total} pistas resolvidas!`;}
+function renderRoom(){scene.className='scene '+state.room;player.style.left=state.x+'%';$('#mentor').style.display=state.room==='classroom'?'block':'none';document.querySelectorAll('.portal').forEach(p=>p.style.display=state.room==='classroom'?'block':'none');paintStats();updateObjective();applySettings();renderClues();persist()}
 
 let facing='right',walkFrame=0,walkClock=null;
 function setFrame(dir,idx){playerImg.src=`assets/hero_frames/${dir}_${idx}.png`}
 function startWalking(dir){facing=dir;if(state.settings.motion){setFrame(dir,0);return}if(!walkClock){setFrame(dir,0);walkClock=setInterval(()=>{walkFrame=(walkFrame+1)%4;setFrame(facing,walkFrame)},120)}}
 function stopWalking(){if(walkClock){clearInterval(walkClock);walkClock=null}walkFrame=0;setFrame(facing,0)}
-function move(dx){startWalking(dx<0?'left':'right');state.x=Math.max(2,Math.min(82,state.x+dx));player.style.left=state.x+'%';state.energy=clamp(state.energy-.035);const now=performance.now();if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}if(now-lastStepSound>340){playSound('step');lastStepSound=now}persist();clearTimeout(move._t);move._t=setTimeout(stopWalking,170)}
+function move(dx){startWalking(dx<0?'left':'right');state.x=Math.max(2,Math.min(82,state.x+dx));player.style.left=state.x+'%';state.energy=clamp(state.energy-.035);const now=performance.now();if(now-lastEnergyPaint>260){$('#energy').textContent=Math.round(state.energy);lastEnergyPaint=now}if(now-lastStepSound>340){playSound('step');lastStepSound=now}updateNearbyClue();persist();clearTimeout(move._t);move._t=setTimeout(stopWalking,170)}
 
 function open(html,immersive=false){content.innerHTML=html;modal.classList.remove('hidden');modal.classList.toggle('immersive',immersive);playSound('click');announce(content.innerText);setTimeout(()=>modal.querySelector('.panel')?.focus(),20);if(state.settings.tts)speak(content.innerText)}
 function close(){modal.classList.add('hidden');modal.classList.remove('immersive');if('speechSynthesis'in window)speechSynthesis.cancel();announce('Janela fechada.')}
@@ -218,6 +218,12 @@ function flashHud(deltas){
 }
 function getCase(id){return CASES.find(c=>c.id===id)}
 function firstUndone(){return CASES.find(x=>!state.done.includes(x.id))||CASES[0]}
+const CLUE_ROOMS=['campus','classroom','library','laboratory','computer_lab','cafeteria'];const CLUE_X=[16,36,58,76,24,48,70,84,30,62,80,42];
+function clueData(){return CASES.map((c,i)=>({id:c.id,room:CLUE_ROOMS[i%CLUE_ROOMS.length],x:CLUE_X[i%CLUE_X.length],n:i+1}))}function cluesHere(){return clueData().filter(c=>c.room===state.room)}
+function nearestClue(){const a=cluesHere().filter(c=>!state.done.includes(c.id));let b=null,d=999;for(const c of a){let x=Math.abs(state.x-c.x);if(x<d){b=c;d=x}}return b&&d<=9?b:null}
+function renderClues(){scene.querySelectorAll('.worldClue').forEach(e=>e.remove());cluesHere().forEach(c=>{const done=state.done.includes(c.id),b=document.createElement('button');b.className='worldClue'+(done?' solved':'');b.style.left=c.x+'%';b.dataset.case=c.id;b.innerHTML=`<span class="clueGlow"></span><span class="clueIcon">${done?'✓':'?'}</span><small>${done?'CONCLUÍDA':'PISTA '+c.n}</small>`;b.onclick=()=>Math.abs(state.x-c.x)<=9?(done?openCase(c.id):revealClue(c.id)):(playSound('warning'),announce('Aproxime-se da pista.'));scene.appendChild(b)});updateNearbyClue()}
+function updateNearbyClue(){const c=nearestClue(),b=$('#interactBtn');b.textContent=c?'🔎 INVESTIGAR PISTA':'INTERAGIR';b.classList.toggle('ready',!!c);scene.querySelectorAll('.worldClue').forEach(e=>e.classList.toggle('near',!!c&&e.dataset.case===c.id))}
+window.revealClue=id=>{const m=getCase(id);if(!m)return;playSound('mission');open(`<section class="clueReveal"><div class="clueSeal">🔎</div><div class="kicker">PISTA DESCOBERTA</div><h2>${m.title}</h2><p class="clueLead">Você encontrou uma situação de ética acadêmica escondida neste ambiente.</p><div class="clueMiniScene"><b>${m.kicker}</b><p>${m.scene}</p></div><button class="choice primary" onclick="openCase('${id}')">REVELAR DESAFIO →</button><button class="choice" onclick="closeGameModal()">Continuar explorando</button></section>`,true)}
 
 window.openCase=id=>{
  const m=getCase(id);if(!m)return;playSound('mission');const idx=CASES.indexOf(m),completed=state.done.includes(id);
@@ -252,7 +258,7 @@ function showFinalCongratulations(){
   announce(`Parabéns! Você concluiu todos os desafios. Pontuação final ${finalScore}.`);
   if(state.settings.tts)speak(`Parabéns! Você concluiu todos os desafios de ética. Sua pontuação final é ${finalScore}.`);
   const v=content.querySelector('.finalVideo');
-  if(v){v.volume=Math.max(0,Math.min(1,state.settings.volume));v.play().catch(()=>{});}
+  if(v){v.volume=Math.max(0,Math.min(1,state.settings.volume));v.load();let p=v.play();if(p&&p.catch)p.catch(()=>{v.muted=true;v.play().catch(()=>{})});}
 }
 
 window.answerCase=(id,i)=>{
@@ -289,10 +295,10 @@ window.openCaseLibrary=(cat='Todos')=>{
  html+='</div>';open(html,true);
 };
 
-function mission(){window.openCase(firstUndone().id)}
+function mission(){const c=nearestClue();if(c)return revealClue(c.id);playSound('warning');announce('Caminhe e aproxime-se de uma pista brilhante.')}
 function map(){open(`<h2>Mapa do campus</h2><p>Escolha um ambiente.</p><div class="mapgrid">${Object.keys(rooms).map(r=>`<button onclick="goRoom('${r}');closeGameModal()">${labels[r]}</button>`).join('')}</div>`)}
 function menu(){open(`<h2>Menu</h2><div class="choices"><button class="choice primary" onclick="openCaseLibrary()">Casos de ética em publicação</button><button class="choice" onclick="map()">Mapa</button><button class="choice" onclick="openAccessibility()">♿ Acessibilidade</button><button class="choice" onclick="showCredits()">Créditos do jogo</button><button class="choice" onclick="resetGame()">Reiniciar progresso</button></div>`)}
-window.goRoom=r=>{if(!rooms[r])return;state.room=r;state.x=42;renderRoom();playSound('click');announce(`Ambiente: ${labels[r]}`);if(state.settings.tts)speak(`Você entrou em ${labels[r]}.`)};
+window.goRoom=r=>{if(!rooms[r])return;state.room=r;state.x=4;renderRoom();playSound('click');announce(`Ambiente: ${labels[r]}`);if(state.settings.tts)speak(`Você entrou em ${labels[r]}.`)};
 window.map=map;
 window.showCredits=()=>open(`<h2>Créditos e autoria do próprio jogo</h2><p>Este espaço deve demonstrar, na prática, o princípio ensinado pelos casos.</p><div class="credits"><div class="creditCard"><b>Concepção e conteúdo acadêmico</b><br>Inserir os nomes de quem definiu a proposta, os dilemas e a fundamentação pedagógica.</div><div class="creditCard"><b>Programação e integração PWA</b><br>Inserir quem desenvolveu ou integrou o código e a lógica.</div><div class="creditCard"><b>Arte e assets</b><br>Registrar criação, seleção, adaptação e revisão das imagens.</div><div class="creditCard"><b>Testes, acessibilidade e revisão</b><br>Registrar estudantes e colaboradores conforme participação efetiva.</div><div class="creditCard"><b>Agradecimentos</b><br>Reconhecer apoio técnico, logístico ou institucional que não se enquadre como autoria, com descrição adequada.</div></div><p><small>Os nomes devem ser inseridos conforme a contribuição real e as regras do contexto em que o jogo for apresentado ou publicado.</small></p>`,true);
 
@@ -307,9 +313,9 @@ $('#soundToggle').onclick=()=>{state.settings.sound=!state.settings.sound;applyS
 $('#soundBtn').onclick=()=>$('#soundToggle').click();
 $('#volumeRange').oninput=e=>{state.settings.volume=Number(e.target.value)/100;applySettings();persist()};$('#volumeRange').onchange=()=>playSound('click');
 
-window.resetGame=()=>{if(confirm('Reiniciar pontuação e casos concluídos?')){localStorage.removeItem('eticaGameStateV6');location.reload()}};
+window.resetGame=()=>{if(confirm('Reiniciar pontuação e casos concluídos?')){localStorage.removeItem('eticaGameStateV9');location.reload()}};
 
-$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#actionBtn').onclick=()=>window.openCaseLibrary();$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
+$('#closeModal').onclick=close;$('#interactBtn').onclick=mission;$('#actionBtn').onclick=()=>open(`<h2>Como jogar</h2><p>Caminhe com ◀ ▶ ou A/D. Procure os <b>?</b> brilhantes. Ao chegar perto, toque em <b>Investigar pista</b>. Cada pista revela um card imersivo com um dilema de ética na publicação.</p><p>Use o Mapa para explorar os demais ambientes.</p>`);$('#mapBtn').onclick=map;$('#menuBtn').onclick=menu;
 
 document.querySelectorAll('[data-move]').forEach(b=>{let timer=null;const d=b.dataset.move==='left'?-1.8:1.8;const start=e=>{e.preventDefault();move(d);timer=setInterval(()=>move(d),95)};const end=()=>{if(timer){clearInterval(timer);timer=null}stopWalking()};b.addEventListener('pointerdown',start);b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);b.addEventListener('pointerleave',end)});
 
@@ -320,7 +326,7 @@ document.addEventListener('keydown',e=>{
  if(['ArrowLeft','ArrowRight','a','d'].includes(e.key)){e.preventDefault();keys.add(e.key);if(!keyLoop)keyLoop=setInterval(()=>{if(keys.has('ArrowLeft')||keys.has('a'))move(-1.4);if(keys.has('ArrowRight')||keys.has('d'))move(1.4)},85)}
  if((e.key==='e'||e.key==='Enter')&&modal.classList.contains('hidden'))mission();
  if(e.key.toLowerCase()==='m'&&modal.classList.contains('hidden'))map();
- if(e.key.toLowerCase()==='c'&&modal.classList.contains('hidden'))window.openCaseLibrary();
+ 
 });
 document.addEventListener('keyup',e=>{keys.delete(e.key);if(!keys.size&&keyLoop){clearInterval(keyLoop);keyLoop=null;stopWalking()}});
 
