@@ -194,3 +194,36 @@ html,body{width:100%;height:100%;min-height:100%;overflow:hidden}
   .dpad [data-move="up"],.dpad [data-move="down"]{background:#164a8e!important;border-color:#59cfff!important}
   .depthIndicator{left:8px;bottom:8px;font-size:9px}
 }
+
+/* ===== V14 — entrada real no cenário + pistas 100% clicáveis ===== */
+.scene{perspective:900px}
+.scene::before{height:58%!important;background:
+  linear-gradient(to top,rgba(9,35,75,.30),rgba(9,35,75,.04) 75%,transparent),
+  repeating-linear-gradient(to top,rgba(255,255,255,.07) 0 1px,transparent 1px 56px)!important;
+  clip-path:polygon(0 100%,100% 100%,88% 0,12% 0%)!important}
+.depthBtn{background:linear-gradient(180deg,#1767b9,#0b356e)!important;border:2px solid #6fe3ff!important}
+.depthBtn small{font-size:8px!important;font-weight:1000!important;color:#fff!important}
+.frontBtn{background:linear-gradient(180deg,#0d8b77,#075548)!important;border-color:#68ffd5!important}
+.worldClue{min-width:60px;min-height:78px;touch-action:manipulation;cursor:pointer}
+.worldClue .clueIcon{pointer-events:none}
+.worldClue .clueGlow{pointer-events:none}
+.worldClue small{pointer-events:none}
+.worldClue:not(.solved):active .clueIcon{transform:scale(1.2)}
+.player{transition:left .07s linear,bottom .09s linear,transform .11s ease!important}
+#interactBtn.ready{background:linear-gradient(135deg,#ffe353,#ff9f1c)!important;color:#10204a!important}
+@media(max-width:760px){
+ .dpad{grid-template-columns:repeat(3,52px)!important;grid-template-rows:repeat(2,48px)!important}
+ .dpad button{min-width:52px!important;min-height:48px!important}
+ .depthBtn{font-size:19px!important}
+ .depthBtn small{font-size:7px!important}
+}
+@media(max-width:390px){
+ .dpad{grid-template-columns:repeat(3,45px)!important;grid-template-rows:repeat(2,44px)!important}
+ .dpad button{min-width:45px!important;min-height:44px!important}
+}
+/* V15 — personagem novo, maior e navegação 2.5D estável */
+.scene.classroom{background-image:url('assets/classroom.png')!important;background-position:center bottom!important}
+.player{width:clamp(190px,18vw,330px)!important;height:clamp(245px,37vh,420px)!important;pointer-events:none}
+.player img{image-rendering:auto;object-fit:contain!important;object-position:center bottom!important}
+@media(max-width:760px){.player{width:clamp(180px,30vw,250px)!important;height:clamp(230px,35vh,320px)!important}}
+@media(max-height:520px) and (orientation:landscape){.player{width:150px!important;height:205px!important}}

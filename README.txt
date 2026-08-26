@@ -90,3 +90,21 @@ VERSÃO 13 — PROTEÇÃO CONTRA SPRITE QUEBRADO
 • fallback adicional usa o frame 0 da direção atual;
 • todos os sprites entram no cache do PWA;
 • cache atualizado para evitar reaproveitar arquivos antigos quebrados.
+
+VERSÃO 14 — ENTRAR NO CENÁRIO + PISTAS FUNCIONAIS
+• ▲ ENTRAR move o personagem claramente para dentro/fundo do cenário;
+• ▼ VOLTAR traz o personagem para a frente;
+• amplitude vertical e perspectiva aumentadas;
+• botões de profundidade têm fallback de clique para celulares;
+• qualquer ponto de interrogação pode ser tocado;
+• se a pista estiver distante, o personagem caminha automaticamente até ela e abre o card;
+• proximidade manual ficou mais tolerante;
+• quarto possui três pistas em profundidades diferentes;
+• indicador mostra FRENTE, MEIO ou DENTRO DO CENÁRIO.
+
+VERSÃO 16 — CORREÇÃO DA PISTA 10
+• pista 10 reposicionada na sala de aula, longe de sobreposições;
+• tocar em qualquer ? agora abre a pista diretamente, sem depender da caminhada automática;
+• adicionada resolução segura por número de pista;
+• mantida a exploração manual, proximidade e interação pelo cenário;
+• cache atualizado para evitar carregar a versão antiga da pista 10.
