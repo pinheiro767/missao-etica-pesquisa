@@ -108,3 +108,12 @@ VERSÃO 16 — CORREÇÃO DA PISTA 10
 • adicionada resolução segura por número de pista;
 • mantida a exploração manual, proximidade e interação pelo cenário;
 • cache atualizado para evitar carregar a versão antiga da pista 10.
+
+VERSÃO 17 — PERSONAGEM LIMPO + CENÁRIO SEM OBJETOS ARTIFICIAIS
+• removidos fragmentos de imagens vizinhas dos sprites (30 frames processados);
+• eliminado o pedaço/cabeça que aparecia separado abaixo do personagem;
+• removidos os objetos emoji espalhados pelo chão;
+• removidas as colisões artificiais desses objetos;
+• o cenário original fica visualmente limpo para exploração;
+• personagem ligeiramente maior, inclusive no celular;
+• salto permanece disponível como animação, mas não é obrigatório para atravessar objetos artificiais.

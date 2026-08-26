@@ -348,26 +348,13 @@ window.openClueNumber=n=>{
 
 function nearestClue(){const a=cluesHere().filter(c=>!state.done.includes(c.id));let b=null,d=999;for(const c of a){let x=Math.hypot(state.x-c.x,(state.y-c.y)*1.15);if(x<d){b=c;d=x}}return b&&d<=12?b:null}
 
-const ROOM_OBSTACLES={
- campus:[{x:28,y:11,t:'📚'},{x:52,y:18,t:'🎒'},{x:73,y:28,t:'📦'}],
- classroom:[{x:30,y:15,t:'📚'},{x:56,y:27,t:'🪑'},{x:77,y:17,t:'🎒'}],
- library:[{x:25,y:22,t:'📚'},{x:50,y:34,t:'📦'},{x:74,y:16,t:'📚'}],
- laboratory:[{x:31,y:18,t:'🧰'},{x:59,y:30,t:'📦'},{x:76,y:14,t:'🧪'}],
- computer_lab:[{x:27,y:14,t:'🪑'},{x:53,y:28,t:'💻'},{x:75,y:19,t:'📦'}],
- cafeteria:[{x:32,y:16,t:'🪑'},{x:57,y:29,t:'📦'},{x:78,y:13,t:'🪑'}],
- bedroom:[{x:24,y:15,t:'🎒'},{x:48,y:28,t:'📚'},{x:72,y:18,t:'🧺'}],
- creators_room:[{x:36,y:18,t:'📚'},{x:68,y:27,t:'🏆'}]
-};
+const ROOM_OBSTACLES={};
 let isJumping=false;
-function obstaclesHere(){return ROOM_OBSTACLES[state.room]||[]}
+function obstaclesHere(){return []}
 function renderObstacles(){
- scene.querySelectorAll('.worldObstacle').forEach(e=>e.remove());
- obstaclesHere().forEach((o,i)=>{const d=document.createElement('div');d.className='worldObstacle';d.style.left=o.x+'%';d.style.bottom=o.y+'%';d.setAttribute('aria-hidden','true');d.innerHTML=`<span>${o.t}</span>`;scene.appendChild(d);});
+  scene.querySelectorAll('.worldObstacle').forEach(e=>e.remove());
 }
-function blocked(nx,ny){
- if(isJumping)return false;
- return obstaclesHere().some(o=>Math.hypot(nx-o.x,(ny-o.y)*1.1)<7.2);
-}
+function blocked(nx,ny){return false}
 function jump(){
  if(isJumping)return;
  isJumping=true;player.classList.add('jumping');playSound('click');announce('Personagem pulando.');
